@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSP Result</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Traveling Salesperson Problem (TSP) Result</h1>
+        <div id="result">
+            <h3>Optimal Path:</h3>
+            <p id="path"></p>
+            <h3>Minimum Distance:</h3>
+            <p id="distance"></p>
+        </div>
+    </div>
+
+    <script>
+        async function fetchTSPResult() {
+            try {
+                const response = await fetch('output.json');  // Corrected path
+                const data = await response.json();
+                
+                // Displaying the TSP result
+                document.getElementById('path').textContent = `[${data.optimal_path.join(', ')}]`;
+                document.getElementById('distance').textContent = `${data.minimum_distance}`;
+            } catch (error) {
+                console.error('Error loading TSP result:', error);
+                document.getElementById('result').innerHTML = '<p>Error loading result.</p>';
+            }
+        }
+    
+        // Load the TSP result when the page loads
+        window.onload = fetchTSPResult;
+    </script>
+    
+    
+</body>
+</html>
