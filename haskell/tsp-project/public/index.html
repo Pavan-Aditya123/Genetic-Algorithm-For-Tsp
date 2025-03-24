@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traveling Salesman Problem Solver</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Traveling Salesman Problem Solver</h1>
+
+        <!-- Input Section for City Name and Coordinates -->
+        <div class="input-container">
+            <label for="cityName">City Name:</label>
+            <input type="text" id="cityName" placeholder="Enter city name" />
+            <label for="cityX">X Coordinate:</label>
+            <input type="number" id="cityX" placeholder="Enter X Coordinate" />
+            <label for="cityY">Y Coordinate:</label>
+            <input type="number" id="cityY" placeholder="Enter Y Coordinate" />
+            <button onclick="addCity()">Add City</button>
+        </div>
+
+        <!-- List of Added Cities -->
+        <div class="city-list">
+            <h3>Added Cities</h3>
+            <ul id="citiesList">
+                <!-- Cities will be listed here -->
+            </ul>
+        </div>
+
+        <!-- Canvas for Drawing Cities and Path -->
+        <canvas id="tspCanvas" width="600" height="600"></canvas>
+
+        <!-- Solve Button -->
+        <button id="solveBtn" onclick="solveTSP()">Solve TSP</button>
+
+        <!-- Result Section (Hidden initially) -->
+        <div id="result" class="hidden">
+            <h2>Optimal Path and Distance</h2>
+            <p id="optimalPath"></p>
+            <p id="totalDistance"></p>
+        </div>
+    </div>
+
+    <script src="scripts.js"></script>
+</body>
+</html>
