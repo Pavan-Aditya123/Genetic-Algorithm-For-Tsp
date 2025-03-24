@@ -211,18 +211,45 @@
             opacity: 0;
             transition: all 0.3s ease;
         }
+        .loading-content {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
         .loading-spinner {
-            width: 100px;
-            height: 100px;
-            border: 10px solid #f3f3f3;
-            border-top: 10px solid #3498db;
+            width: 70px;
+            height: 70px;
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #3498db;
             border-radius: 50%;
+            margin: 0 auto 20px;
             animation: spin 1s linear infinite;
         }
         .loading-text {
-            color: white;
+            color: #333;
             font-size: 18px;
-            margin-top: 10px;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+        .progress {
+            height: 25px;
+            border-radius: 12px;
+            margin: 15px auto;
+            max-width: 300px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .progress-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            transition: width 0.3s ease;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -307,6 +334,35 @@
         .control-buttons .form-check-input {
             width: 40px;
             height: 20px;
+        }
+        
+        /* Comparison section styling */
+        #pathComparison {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        #pathComparison h5 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        #pathComparison table {
+            margin-bottom: 0;
+        }
+        
+        #pathComparison th {
+            background-color: #e9ecef;
+            font-weight: 600;
+        }
+        
+        .view-path {
+            padding: 3px 8px;
+            font-size: 12px;
         }
     </style>
 </head>
@@ -431,13 +487,9 @@
                                 <button class="btn btn-sm btn-outline-secondary preset-btn" onclick="loadParameterPreset('exploitative')">Exploitative</button>
                             </div>
                             
-                            <button class="btn btn-success w-100 mt-4" onclick="startAlgorithm()">
-                                <i class="fas fa-play me-2"></i>Start Algorithm
-                            </button>
-                            
-                            <div class="progress mt-3">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                                     id="progressBar" role="progressbar" style="width: 0%"></div>
+                            <div class="d-flex gap-2 mt-4">
+                                <button class="btn btn-success flex-grow-1" onclick="startAlgorithm()">Start Algorithm</button>
+                                <button class="btn btn-info flex-grow-1" onclick="verifyOtherPaths()">Verify Other Paths</button>
                             </div>
                         </div>
                     </div>
@@ -464,26 +516,38 @@
                             <canvas id="tspCanvas"></canvas>
                         </div>
                         
-                        <div class="stats">
-                            <div class="stat-card">
-                                <div class="stat-value" id="currentDistance">-</div>
-                                <div class="stat-label">Current Distance</div>
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Algorithm Statistics</h5>
                             </div>
-                            <div class="stat-card">
-                                <div class="stat-value" id="bestDistance">-</div>
-                                <div class="stat-label">Best Distance</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value" id="currentGeneration">-</div>
-                                <div class="stat-label">Generation</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value" id="bestFitness">-</div>
-                                <div class="stat-label">Best Fitness</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value" id="averageFitness">-</div>
-                                <div class="stat-label">Avg Fitness</div>
+                            <div class="card-body">
+                                <div class="stats">
+                                    <div class="stat-card">
+                                        <div class="stat-value" id="bestDistance">-</div>
+                                        <div class="stat-label">Best Distance</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-value" id="bestFitness">-</div>
+                                        <div class="stat-label">Best Fitness (1/d)</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-value" id="avgFitness">-</div>
+                                        <div class="stat-label">Average Fitness</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-value" id="generationCount">-</div>
+                                        <div class="stat-label">Generations</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-value" id="elapsedTime">-</div>
+                                        <div class="stat-label">Processing Time</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <h6>Best Path:</h6>
+                                    <p id="bestPath" class="p-2 bg-light rounded">No path yet</p>
+                                </div>
                             </div>
                         </div>
                         
@@ -551,10 +615,14 @@
     </div>
 
     <div class="loading-overlay" id="loadingOverlay">
-        <div class="text-center">
+        <div class="loading-content">
             <div class="loading-spinner"></div>
-            <div class="loading-text">Processing with Genetic Algorithm...</div>
-            <div class="text-white mt-3" id="loadingProgress">0%</div>
+            <div class="loading-text" id="loadingText">Processing algorithm...</div>
+            <div class="progress mt-3" style="width: 300px; height: 25px;">
+                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <span id="loadingProgress">0%</span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -706,18 +774,21 @@
             // Get parameters
             const params = {
                 cities: cities,
-                populationSize: parseInt(document.getElementById('populationSize').value),
-                generations: parseInt(document.getElementById('generations').value),
-                mutationRate: parseFloat(document.getElementById('mutationRate').value),
-                crossoverRate: parseFloat(document.getElementById('crossoverRate').value),
-                elitismCount: parseInt(document.getElementById('elitismCount').value),
-                tournamentSize: parseInt(document.getElementById('tournamentSize').value)
+                parameters: {
+                    populationSize: parseInt(document.getElementById('populationSize').value),
+                    generations: parseInt(document.getElementById('generations').value),
+                    mutationRate: parseFloat(document.getElementById('mutationRate').value),
+                    crossoverRate: parseFloat(document.getElementById('crossoverRate').value),
+                    elitismCount: parseInt(document.getElementById('elitismCount').value),
+                    tournamentSize: parseInt(document.getElementById('tournamentSize').value)
+                }
             };
             
             // Set parameters for visualization
-            visualization.setParameters(params.populationSize, params.generations);
+            visualization.setParameters(params.parameters.populationSize, params.parameters.generations);
             
             try {
+                // Submit the job
                 const response = await fetch('/solve-tsp', {
                     method: 'POST',
                     headers: {
@@ -726,55 +797,72 @@
                     body: JSON.stringify(params)
                 });
                 
-                const result = await response.json();
-                lastResult = result; // Store for download
-                
-                // Hide loading overlay
-                document.getElementById('loadingOverlay').classList.remove('show-overlay');
-                
-                // Update UI
-                updateStats(result);
-                
-                // Display best path
-                const pathDisplay = document.getElementById('bestPath');
-                if (result.bestPath && result.bestPath.length > 0) {
-                    // Format the path for display (city indices + 1 for human readability)
-                    pathDisplay.textContent = result.bestPath.map(idx => idx + 1).join(' → ');
-                } else if (result.path) {
-                    pathDisplay.textContent = result.path.join(' → ');
-                } else {
-                    pathDisplay.textContent = 'No path found';
+                if (!response.ok) {
+                    throw new Error(`Server returned status ${response.status}`);
                 }
                 
-                // Update visualization
-                const bestPath = result.bestPath || [];
+                const jobData = await response.json();
+                const jobId = jobData.jobId;
                 
-                // Check if we're using the old or new format
-                if (bestPath.length > 0 && typeof bestPath[0] === 'number') {
-                    // New format - bestPath is already indices
-                    visualization.setPaths(bestPath, bestPath, result.bestDistance, result.bestDistance, result.generationHistory ? result.generationHistory.length : 0);
-                    
-                    // Update chart with generation history if available
-                    if (result.generationHistory && result.generationHistory.length > 0) {
-                        const bestFitnessHistory = result.generationHistory.map(g => g.bestFitness);
-                        const avgFitnessHistory = result.generationHistory.map(g => g.averageFitness);
-                        const generations = result.generationHistory.map(g => g.generation);
-                        
-                        // Update the chart with all generation data
-                        updateFitnessChart(fitnessChart, generations, bestFitnessHistory, avgFitnessHistory);
+                if (!jobId) {
+                    throw new Error('No job ID returned from server');
+                }
+                
+                // Set timeout for Haskell solver
+                let hasTimedOut = false;
+                const timeout = setTimeout(() => {
+                    hasTimedOut = true;
+                    console.log('Haskell solver taking too long, falling back to JavaScript solver');
+                    fallbackToJsSolver(params);
+                }, 30000); // 30 second timeout
+                
+                // Poll for progress
+                const pollInterval = setInterval(async () => {
+                    if (hasTimedOut) {
+                        clearInterval(pollInterval);
+                        return;
                     }
-                } else {
-                    // Old format
-                    const path = result.path.map(name => cities.findIndex(c => c.name === name));
-                    visualization.setPaths(path, path, result.distance, result.bestFitness, result.generation);
                     
-                    // Update chart
-                    updateFitnessChart(fitnessChart, result.generation, result.bestFitness, result.averageFitness);
-                }
-                
-                // Start animation
-                visualization.startAnimation();
-                
+                    try {
+                        const progressResponse = await fetch(`/progress/${jobId}`);
+                        const progressData = await progressResponse.json();
+                        
+                        // Update progress bar
+                        updateProgress(progressData.progress);
+                        
+                        if (progressData.progress === 100 || progressData.progress < 0) {
+                            // Job is complete or failed
+                            clearInterval(pollInterval);
+                            clearTimeout(timeout); // Clear the timeout since we got a response
+                            
+                            if (progressData.progress === 100) {
+                                // Fetch the result
+                                const resultResponse = await fetch('/result');
+                                
+                                if (resultResponse.ok) {
+                                    const result = await resultResponse.json();
+                                    handleResult(result);
+                                } else {
+                                    throw new Error('Failed to fetch result');
+                                }
+                            } else {
+                                // If the Haskell solver failed, use the JavaScript solver
+                                console.log('Haskell solver failed, falling back to JavaScript solver');
+                                fallbackToJsSolver(params);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error polling progress:', error);
+                        clearInterval(pollInterval);
+                        clearTimeout(timeout);
+                        
+                        if (!hasTimedOut) {
+                            // Try the JavaScript solver as a fallback
+                            console.log('Error with Haskell solver, falling back to JavaScript solver');
+                            fallbackToJsSolver(params);
+                        }
+                    }
+                }, 1000); // Poll every second
             } catch (error) {
                 console.error('Error:', error);
                 document.getElementById('loadingOverlay').classList.remove('show-overlay');
@@ -782,39 +870,167 @@
             }
         }
         
+        // Fallback to JavaScript solver if Haskell solver fails or times out
+        async function fallbackToJsSolver(params) {
+            try {
+                console.log('Using JavaScript solver fallback');
+                updateProgress(50); // Reset progress to 50%
+                
+                const response = await fetch('/solve-tsp-js', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(params)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`JavaScript solver failed with status ${response.status}`);
+                }
+                
+                const result = await response.json();
+                handleResult(result);
+            } catch (error) {
+                console.error('JavaScript solver error:', error);
+                document.getElementById('loadingOverlay').classList.remove('show-overlay');
+                alert('An error occurred while running the algorithm with JavaScript fallback');
+            }
+        }
+        
+        // Handle successful result
+        function handleResult(result) {
+            lastResult = result; // Store for download
+            
+            // Hide loading overlay
+            document.getElementById('loadingOverlay').classList.remove('show-overlay');
+            
+            // Update UI
+            updateStats(result);
+            
+            // Display best path
+            const pathDisplay = document.getElementById('bestPath');
+            if (result.bestPath && result.bestPath.length > 0) {
+                // Format the path for display with city names instead of indices
+                let pathWithNames = result.bestPath.map(idx => cities[idx].name);
+                
+                // Add the starting city again at the end to complete the circuit
+                if (pathWithNames.length > 0 && pathWithNames[0] !== pathWithNames[pathWithNames.length-1]) {
+                    pathWithNames.push(pathWithNames[0]);
+                }
+                
+                pathDisplay.textContent = pathWithNames.join(' → ');
+            } else if (result.path) {
+                // Ensure the path returns to the start
+                let pathCopy = [...result.path];
+                if (pathCopy.length > 0 && pathCopy[0] !== pathCopy[pathCopy.length-1]) {
+                    pathCopy.push(pathCopy[0]);
+                }
+                pathDisplay.textContent = pathCopy.join(' → ');
+            } else {
+                pathDisplay.textContent = 'No path found';
+            }
+            
+            // Update visualization
+            const bestPath = result.bestPath || [];
+            
+            // Check if we're using the old or new format
+            if (bestPath.length > 0 && typeof bestPath[0] === 'number') {
+                // New format - bestPath is already indices
+                // Create a closed loop by adding the first city again
+                let closedPath = [...bestPath];
+                if (closedPath.length > 0) {
+                    closedPath.push(closedPath[0]);
+                }
+                
+                visualization.setPaths(closedPath, closedPath, result.bestDistance, result.bestDistance, result.generationHistory ? result.generationHistory.length : 0);
+                
+                // Update chart with generation history if available
+                if (result.generationHistory && result.generationHistory.length > 0) {
+                    const bestFitnessHistory = result.generationHistory.map(g => g.bestFitness);
+                    const avgFitnessHistory = result.generationHistory.map(g => g.averageFitness);
+                    const generations = result.generationHistory.map(g => g.generation);
+                    
+                    // Update the chart with all generation data
+                    updateFitnessChart(fitnessChart, generations, bestFitnessHistory, avgFitnessHistory);
+                }
+            } else {
+                // Old format
+                const path = result.path.map(name => cities.findIndex(c => c.name === name));
+                // Create a closed loop
+                let closedPath = [...path];
+                if (closedPath.length > 0) {
+                    closedPath.push(closedPath[0]);
+                }
+                
+                visualization.setPaths(closedPath, closedPath, result.distance, result.bestFitness, result.generation);
+                
+                // Update chart
+                updateFitnessChart(fitnessChart, result.generation, result.bestFitness, result.averageFitness);
+            }
+            
+            // Start animation
+            visualization.startAnimation();
+        }
+        
         // Update progress bar
         function updateProgress(percent) {
-            document.getElementById('progressBar').style.width = `${percent}%`;
-            document.getElementById('loadingProgress').textContent = `${Math.round(percent)}%`;
+            // Ensure percent is a valid number between 0 and 100
+            if (isNaN(percent) || percent < 0) percent = 0;
+            if (percent > 100) percent = 100;
+            
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('loadingProgress');
+            
+            // Update the progress bar width with a smooth transition
+            progressBar.style.width = `${percent}%`;
+            progressBar.setAttribute('aria-valuenow', percent);
+            
+            // Update the text
+            progressText.textContent = `${Math.round(percent)}%`;
+            
+            // Update loading message based on progress
+            const loadingText = document.getElementById('loadingText');
+            if (percent < 20) {
+                loadingText.textContent = 'Initializing algorithm...';
+            } else if (percent < 50) {
+                loadingText.textContent = 'Generating initial population...';
+            } else if (percent < 80) {
+                loadingText.textContent = 'Evolving solutions...';
+            } else {
+                loadingText.textContent = 'Finalizing best path...';
+            }
         }
         
         // Update statistics display
         function updateStats(result) {
-            // Check which format we're using
-            if (result.bestDistance !== undefined) {
-                // New format
-                document.getElementById('currentDistance').textContent = result.bestDistance.toFixed(2);
-                document.getElementById('bestDistance').textContent = result.bestDistance.toFixed(2);
-                
-                const generations = result.generationHistory ? result.generationHistory.length : 0;
-                document.getElementById('currentGeneration').textContent = generations;
-                
-                if (result.generationHistory && result.generationHistory.length > 0) {
-                    const lastGen = result.generationHistory[result.generationHistory.length - 1];
-                    document.getElementById('bestFitness').textContent = lastGen.bestFitness.toFixed(2);
-                    document.getElementById('averageFitness').textContent = lastGen.averageFitness.toFixed(2);
-                } else {
-                    document.getElementById('bestFitness').textContent = result.bestDistance.toFixed(2);
-                    document.getElementById('averageFitness').textContent = (result.bestDistance * 1.2).toFixed(2);
-                }
+            document.getElementById('bestDistance').textContent = result.bestDistance ? result.bestDistance.toFixed(2) : 'N/A';
+            document.getElementById('elapsedTime').textContent = result.elapsed ? result.elapsed.toFixed(2) + ' sec' : 'N/A';
+            
+            // Calculate and display fitness values properly
+            if (result.bestDistance && result.bestDistance > 0) {
+                const bestFitness = (1.0 / result.bestDistance).toFixed(6);
+                document.getElementById('bestFitness').textContent = bestFitness;
             } else {
-                // Old format
-                document.getElementById('currentDistance').textContent = result.distance;
-                document.getElementById('bestDistance').textContent = result.distance;
-                document.getElementById('currentGeneration').textContent = result.generation;
-                document.getElementById('bestFitness').textContent = result.bestFitness.toFixed(4);
-                document.getElementById('averageFitness').textContent = result.averageFitness.toFixed(4);
+                document.getElementById('bestFitness').textContent = 'N/A';
             }
+            
+            // Set average fitness
+            if (result.generationHistory && result.generationHistory.length > 0) {
+                const lastGen = result.generationHistory[result.generationHistory.length - 1];
+                document.getElementById('avgFitness').textContent = lastGen.averageFitness.toFixed(6);
+            } else {
+                // If no generation history, estimate average fitness
+                if (result.bestDistance) {
+                    const avgFitness = (0.7 / result.bestDistance).toFixed(6);
+                    document.getElementById('avgFitness').textContent = avgFitness;
+                } else {
+                    document.getElementById('avgFitness').textContent = 'N/A';
+                }
+            }
+            
+            document.getElementById('generationCount').textContent = 
+                result.generationHistory ? result.generationHistory.length : 
+                (result.generation ? result.generation : 'N/A');
         }
         
         // Animation controls
@@ -895,6 +1111,228 @@
             document.body.appendChild(downloadAnchorNode);
             downloadAnchorNode.click();
             downloadAnchorNode.remove();
+        }
+
+        // Add this function to verify other paths by performing a quick simulated annealing search
+        function verifyOtherPaths() {
+            if (cities.length < 4 || !lastResult) {
+                alert('Please run the algorithm first');
+                return;
+            }
+            
+            document.getElementById('loadingOverlay').classList.add('show-overlay');
+            document.getElementById('loadingText').textContent = 'Finding alternative paths...';
+            
+            // Generate more alternative paths using simulated annealing
+            setTimeout(() => {
+                const alternativePaths = generateAlternativePaths(cities, 10); // Generate 10 alternative paths
+                
+                // Sort paths by distance
+                alternativePaths.sort((a, b) => a.distance - b.distance);
+                
+                // Get the original path distance
+                const originalDistance = lastResult.bestDistance;
+                
+                document.getElementById('loadingOverlay').classList.remove('show-overlay');
+                
+                // Update UI with comparison
+                const comparisonDiv = document.getElementById('pathComparison');
+                if (!comparisonDiv) {
+                    // Create comparison div if it doesn't exist
+                    const statsCard = document.querySelector('.card:nth-child(2)');
+                    const comparisonSection = document.createElement('div');
+                    comparisonSection.id = 'pathComparison';
+                    comparisonSection.className = 'mt-4 p-3 bg-light rounded';
+                    comparisonSection.innerHTML = `
+                        <h5>Path Comparison</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Path</th>
+                                        <th>Distance</th>
+                                        <th>Difference</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pathComparisonTable">
+                                    <tr>
+                                        <td>Original GA Path</td>
+                                        <td>${originalDistance.toFixed(2)}</td>
+                                        <td>-</td>
+                                        <td><button class="btn btn-sm btn-primary view-path" data-path-type="original">View</button></td>
+                                    </tr>
+                                    ${alternativePaths.map((path, index) => `
+                                        <tr>
+                                            <td>Alternative Path ${index + 1}</td>
+                                            <td>${path.distance.toFixed(2)}</td>
+                                            <td>${(((path.distance - originalDistance) / originalDistance) * 100).toFixed(2)}%</td>
+                                            <td><button class="btn btn-sm btn-info view-path" data-path-type="alternative" data-index="${index}">View</button></td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle"></i> Note: The Original GA Path is not guaranteed to be optimal. 
+                            It represents the best solution found by the genetic algorithm within the given parameters and time constraints.
+                        </div>
+                    `;
+                    statsCard.appendChild(comparisonSection);
+                    
+                    // Add event listeners for the view buttons
+                    document.querySelectorAll('.view-path').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const pathType = this.getAttribute('data-path-type');
+                            if (pathType === 'original') {
+                                // Show original path
+                                visualization.setPaths(lastResult.bestPath.concat(lastResult.bestPath[0]), 
+                                                  lastResult.bestPath.concat(lastResult.bestPath[0]), 
+                                                  lastResult.bestDistance, 
+                                                  lastResult.bestDistance, 
+                                                  lastResult.generationHistory ? lastResult.generationHistory.length : 0);
+                            } else {
+                                // Show alternative path
+                                const index = parseInt(this.getAttribute('data-index'));
+                                const path = alternativePaths[index];
+                                visualization.setPaths(path.path.concat(path.path[0]), 
+                                                  path.path.concat(path.path[0]),
+                                                  path.distance, 
+                                                  path.distance, 
+                                                  0);
+                            }
+                            visualization.startAnimation();
+                        });
+                    });
+                } else {
+                    // Update existing comparison table
+                    document.getElementById('pathComparisonTable').innerHTML = `
+                        <tr>
+                            <td>Original GA Path</td>
+                            <td>${originalDistance.toFixed(2)}</td>
+                            <td>-</td>
+                            <td><button class="btn btn-sm btn-primary view-path" data-path-type="original">View</button></td>
+                        </tr>
+                        ${alternativePaths.map((path, index) => `
+                            <tr>
+                                <td>Alternative Path ${index + 1}</td>
+                                <td>${path.distance.toFixed(2)}</td>
+                                <td>${(((path.distance - originalDistance) / originalDistance) * 100).toFixed(2)}%</td>
+                                <td><button class="btn btn-sm btn-info view-path" data-path-type="alternative" data-index="${index}">View</button></td>
+                            </tr>
+                        `).join('')}
+                    `;
+                    
+                    // Re-add event listeners
+                    document.querySelectorAll('.view-path').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const pathType = this.getAttribute('data-path-type');
+                            if (pathType === 'original') {
+                                // Show original path
+                                visualization.setPaths(lastResult.bestPath.concat(lastResult.bestPath[0]), 
+                                                  lastResult.bestPath.concat(lastResult.bestPath[0]), 
+                                                  lastResult.bestDistance, 
+                                                  lastResult.bestDistance, 
+                                                  lastResult.generationHistory ? lastResult.generationHistory.length : 0);
+                            } else {
+                                // Show alternative path
+                                const index = parseInt(this.getAttribute('data-index'));
+                                const path = alternativePaths[index];
+                                visualization.setPaths(path.path.concat(path.path[0]), 
+                                                  path.path.concat(path.path[0]),
+                                                  path.distance, 
+                                                  path.distance, 
+                                                  0);
+                            }
+                            visualization.startAnimation();
+                        });
+                    });
+                }
+            }, 1000);
+        }
+
+        // Generate alternative paths using simulated annealing
+        function generateAlternativePaths(cities, numPaths) {
+            const paths = [];
+            
+            for (let i = 0; i < numPaths; i++) {
+                // Start with a random permutation
+                const path = Array.from({length: cities.length}, (_, i) => i);
+                shuffle(path);
+                
+                // Parameters for simulated annealing
+                let temp = 100.0;
+                const coolingRate = 0.995;
+                const iterations = 10000;
+                
+                // Current path is the best so far
+                let bestSoFar = [...path];
+                let bestDistance = calculatePathDistance(cities, bestSoFar);
+                
+                // Perform simulated annealing
+                for (let iter = 0; iter < iterations; iter++) {
+                    // Create a new neighbor by swapping two cities
+                    const neighbor = [...bestSoFar];
+                    const idx1 = Math.floor(Math.random() * neighbor.length);
+                    let idx2 = Math.floor(Math.random() * neighbor.length);
+                    while (idx1 === idx2) {
+                        idx2 = Math.floor(Math.random() * neighbor.length);
+                    }
+                    
+                    // Swap
+                    [neighbor[idx1], neighbor[idx2]] = [neighbor[idx2], neighbor[idx1]];
+                    
+                    // Calculate distances
+                    const currentDistance = calculatePathDistance(cities, bestSoFar);
+                    const neighborDistance = calculatePathDistance(cities, neighbor);
+                    
+                    // Decide if we should accept the neighbor
+                    if (neighborDistance < currentDistance) {
+                        // Always accept better solutions
+                        bestSoFar = [...neighbor];
+                        bestDistance = neighborDistance;
+                    } else {
+                        // Sometimes accept worse solutions based on temperature
+                        const acceptanceProbability = Math.exp((currentDistance - neighborDistance) / temp);
+                        if (Math.random() < acceptanceProbability) {
+                            bestSoFar = [...neighbor];
+                        }
+                    }
+                    
+                    // Cool down
+                    temp *= coolingRate;
+                }
+                
+                // Add this path to our collection
+                paths.push({
+                    path: bestSoFar,
+                    distance: calculatePathDistance(cities, bestSoFar)
+                });
+            }
+            
+            return paths;
+        }
+
+        // Calculate total distance for a path
+        function calculatePathDistance(cities, path) {
+            let distance = 0;
+            for (let i = 0; i < path.length; i++) {
+                const from = cities[path[i]];
+                const to = cities[path[(i + 1) % path.length]];
+                const dx = from.x - to.x;
+                const dy = from.y - to.y;
+                distance += Math.sqrt(dx * dx + dy * dy);
+            }
+            return distance;
+        }
+
+        // Fisher-Yates shuffle algorithm
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
         }
     </script>
 </body>

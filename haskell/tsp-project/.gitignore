@@ -1,0 +1,38 @@
+# Node.js
+node_modules/
+npm-debug.log
+package-lock.json
+
+# Haskell
+dist/
+dist-newstyle/
+.stack-work/
+*.o
+*.hi
+*.chi
+*.chs.h
+*.dyn_o
+*.dyn_hi
+*.prof
+*.aux
+*.hp
+*.eventlog
+.cabal-sandbox/
+cabal.sandbox.config
+cabal.project.local
+.ghc.environment.*
+
+# Project specific
+public/input.json
+public/output.json
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific
+.DS_Store
+Thumbs.db 

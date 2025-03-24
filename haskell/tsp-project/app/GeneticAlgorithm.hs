@@ -7,7 +7,7 @@ import System.Random (RandomGen, randomR, mkStdGen, randomRIO)
 import Control.Parallel.Strategies (parMap, rdeepseq, using, rpar, parList)
 import Control.DeepSeq (NFData)
 import GHC.Generics (Generic)
-import Data.List (sortBy, minimumBy)
+import Data.List (sortBy, minimumBy, maximumBy)
 import Data.Function (on)
 import Data.Ord (comparing)
 import Control.Monad (replicateM)
@@ -35,7 +35,7 @@ data GAParams = GAParams {
     crossoverRate :: Double,
     elitismCount :: Int,
     tournamentSize :: Int
-} deriving (Show, Generic, NFData)
+} deriving (Show, Generic, NFData, Eq)
 
 -- |Default parameters
 defaultParams :: GAParams
@@ -82,7 +82,7 @@ generateDistanceMatrix cities =
 -- |Calculate the total distance of a route
 routeDistance :: DistanceMatrix -> Route -> Int
 routeDistance distMatrix route = 
-    sum [distMatrix !! (route !! i) !! (route !! next) | i <- [0..length route - 1]]
+    sum [distMatrix !! (route !! i) !! (route !! next i) | i <- [0..length route - 1]]
   where
     next i = (i + 1) `mod` length route
 
@@ -253,43 +253,41 @@ runParallelGA cities params = do
         allGenerationStats = stats
     }
 
--- |Run the genetic algorithm in parallel for multiple generations
+-- |Evolve the population in parallel
 evolvePar :: GAParams -> DistanceMatrix -> Population -> Int -> MVar Int -> Int -> [GenerationStats] -> IO (Population, [GenerationStats])
-evolvePar params distMatrix pop 0 _ currentGen stats = do
+evolvePar params distMatrix pop 0 _ genCount stats = 
     return (pop, reverse stats)
-evolvePar params distMatrix pop remainingGens progressMVar currentGen stats = do
+evolvePar params distMatrix pop generations progressMVar genCount stats = do
     -- Update progress
-    let progress = truncate $ 100 * (fromIntegral (maxGenerations params - remainingGens) / fromIntegral (maxGenerations params))
-    modifyMVar_ progressMVar (const $ return progress)
+    modifyMVar_ progressMVar (\_ -> return $ round $ (fromIntegral genCount / fromIntegral (maxGenerations params)) * 100)
     
-    -- Calculate fitness values in parallel
-    let fitnessValues = map (fitness distMatrix) pop `using` parList rdeepseq
+    -- Evaluate population in parallel
+    let popWithFitness = zip pop (parMap rdeepseq (fitness distMatrix) pop `using` parList rdeepseq)
     
-    -- Get current stats
-    let bestIndividual = fst $ maximumBy (comparing snd) (zip pop fitnessValues)
-        bestDist = routeDistance distMatrix bestIndividual
-        bestFit = maximum fitnessValues
-        avgFit = sum fitnessValues / fromIntegral (length fitnessValues)
-        genStats = GenerationStats {
-            generation = currentGen,
-            bestRouteGen = bestIndividual,
+    -- Find best individual in this generation
+    let (bestInd, bestFit) = maximumBy (comparing snd) popWithFitness
+        bestDist = routeDistance distMatrix bestInd
+        avgFit = sum (map snd popWithFitness) / fromIntegral (length popWithFitness)
+    
+    -- Record statistics
+    let genStat = GenerationStats {
+            generation = genCount,
+            bestRouteGen = bestInd,
             bestDistanceGen = bestDist,
             bestFitnessGen = bestFit,
             avgFitnessGen = avgFit
         }
     
-    -- Evolve population to create next generation (using unsafePerformIO for randomness in pure context)
-    let (newPop, _) = unsafePerformIO $ do
-            g <- mkStdGen <$> randomRIO (1, 1000000)
-            return $ evolvePopulation params distMatrix pop g
-        
-    -- Continue evolution with next generation
-    evolvePar params distMatrix newPop (remainingGens - 1) progressMVar (currentGen + 1) (genStats:stats)
+    -- Evolve to next generation
+    let (nextPop, _) = evolvePopulation params distMatrix pop (mkStdGen (42 + genCount))
+    
+    -- Recur
+    evolvePar params distMatrix nextPop (generations - 1) progressMVar (genCount + 1) (genStat:stats)
 
--- |Get the current progress of the algorithm
+-- |Get progress of the genetic algorithm
 getProgress :: MVar Int -> IO Int
 getProgress = readMVar
 
--- |Helper function to get the names of cities in a route
+-- |Get city names for a route
 getCityNames :: [City] -> Route -> [String]
 getCityNames cities route = map (name . (cities !!)) route 
