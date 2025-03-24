@@ -40,6 +40,16 @@
   (major1) == 0 && (major2) <  11 || \
   (major1) == 0 && (major2) == 11 && (minor) <= 5)
 #endif /* MIN_VERSION_bytestring */
+/* package clock-0.8.4 */
+#ifndef VERSION_clock
+#define VERSION_clock "0.8.4"
+#endif /* VERSION_clock */
+#ifndef MIN_VERSION_clock
+#define MIN_VERSION_clock(major1,major2,minor) (\
+  (major1) <  0 || \
+  (major1) == 0 && (major2) <  8 || \
+  (major1) == 0 && (major2) == 8 && (minor) <= 4)
+#endif /* MIN_VERSION_clock */
 /* package containers-0.6.7 */
 #ifndef VERSION_containers
 #define VERSION_containers "0.6.7"

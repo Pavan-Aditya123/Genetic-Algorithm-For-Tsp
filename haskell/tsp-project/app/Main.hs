@@ -26,7 +26,7 @@ import Data.IORef (newIORef, readIORef, writeIORef)
 import System.Environment (getArgs)
 import Data.Maybe (fromMaybe)
 import System.IO (hSetEncoding, stdout, utf8)
-import Data.Time.Clock (getCurrentTime, diffUTCTime, UTCTime)
+import System.CPUTime (getCPUTime)
 import Control.Exception (try, IOException)
 
 import qualified GeneticAlgorithm as GA
@@ -70,7 +70,7 @@ data GenerationData = GenerationData {
 data JobInfo = JobInfo {
     jobId :: String,
     progress :: Int,
-    startTime :: UTCTime
+    startTime :: Integer
 } deriving (Show, Eq)
 
 instance FromJSON GA.City
@@ -173,11 +173,11 @@ startServer = do
         
         -- API endpoint to solve TSP
         post "/solve-tsp" $ do
-            startTime <- liftIO getCurrentTime
+            startTime <- liftIO getCPUTime
             tspRequest <- jsonData :: ActionM TSPRequest
             
             -- Generate a job ID
-            jobId <- liftIO $ show <$> getCurrentTime
+            jobId <- liftIO $ show <$> getCPUTime
             
             -- Create a progress tracker
             progressMVar <- liftIO $ newMVar (0 :: Int)
@@ -198,8 +198,8 @@ startServer = do
             _ <- liftIO $ forkIO $ do
                 -- Run the genetic algorithm
                 result <- GA.runParallelGA citiesList params
-                endTime <- getCurrentTime
-                let timeElapsed = realToFrac $ diffUTCTime endTime startTime
+                endTime <- getCPUTime
+                let timeElapsed = fromIntegral (endTime - startTime) / 1e12  -- Convert picoseconds to seconds
                 
                 -- Create generation history
                 let genHistory = map (\stat -> GenerationData {
@@ -271,7 +271,7 @@ solveFromFiles inputFile outputFile = do
     case maybeRequest of
         Nothing -> putStrLn "Error: Could not parse input file"
         Just request -> do
-            startTime <- getCurrentTime
+            startTime <- getCPUTime
             let citiesList = reqCities request
                 params = createParams request
             
@@ -280,8 +280,8 @@ solveFromFiles inputFile outputFile = do
             
             -- Run the genetic algorithm
             result <- GA.runParallelGA citiesList params
-            endTime <- getCurrentTime
-            let timeElapsed = realToFrac $ diffUTCTime endTime startTime
+            endTime <- getCPUTime
+            let timeElapsed = fromIntegral (endTime - startTime) / 1e12  -- Convert picoseconds to seconds
             
             -- Create generation history
             let genHistory = map (\stat -> GenerationData {

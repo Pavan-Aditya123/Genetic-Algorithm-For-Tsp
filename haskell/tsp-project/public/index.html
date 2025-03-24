@@ -1256,7 +1256,7 @@
             const paths = [];
             
             for (let i = 0; i < numPaths; i++) {
-                // Start with a random permutation
+                // Start with a random permutation of all cities
                 const path = Array.from({length: cities.length}, (_, i) => i);
                 shuffle(path);
                 
@@ -1301,6 +1301,16 @@
                     
                     // Cool down
                     temp *= coolingRate;
+                }
+                
+                // Verify that all cities are included
+                const allCitiesIncluded = bestSoFar.length === cities.length && 
+                    new Set(bestSoFar).size === cities.length;
+                
+                if (!allCitiesIncluded) {
+                    console.warn('Generated path is missing cities, regenerating...');
+                    i--; // Retry this iteration
+                    continue;
                 }
                 
                 // Add this path to our collection
