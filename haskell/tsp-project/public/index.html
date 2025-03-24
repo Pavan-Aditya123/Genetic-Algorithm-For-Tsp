@@ -3,46 +3,899 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Traveling Salesman Problem Solver</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Parallel Genetic Algorithm for TSP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="visualization.js"></script>
+    <script src="simulation.js"></script>
+    <script src="presets.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .container-fluid {
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .card-header {
+            background: #2c3e50;
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 15px 20px;
+        }
+        #canvas-container {
+            position: relative;
+            width: 100%;
+            height: 600px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        canvas {
+            border-radius: 10px;
+        }
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .stat-label {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .progress {
+            height: 25px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        .btn-primary {
+            background: #3498db;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        .btn-success {
+            background: #2ecc71;
+            border: none;
+        }
+        .btn-success:hover {
+            background: #27ae60;
+        }
+        .btn-info {
+            background: #1abc9c;
+            border: none;
+            color: white;
+        }
+        .btn-info:hover {
+            background: #16a085;
+            color: white;
+        }
+        .btn-warning {
+            background: #f39c12;
+            border: none;
+        }
+        .btn-warning:hover {
+            background: #f1c40f;
+        }
+        .btn-danger {
+            background: #e74c3c;
+            border: none;
+        }
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        .city-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .city-input input {
+            flex: 1;
+        }
+        .city-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        .city-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .city-item:last-child {
+            border-bottom: none;
+        }
+        .city-item:hover {
+            background: #f8f9fa;
+        }
+        .city-item button {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+        .city-item button:hover {
+            background: #c0392b;
+        }
+        .animation-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .animation-controls button {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        .visualization-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .visualization-options .form-check {
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 0;
+        }
+        .chart-container {
+            height: 300px;
+            padding: 10px;
+            margin-top: 20px;
+        }
+        .algorithm-settings {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+        }
+        .preset-btn {
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            visibility: hidden;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        .loading-spinner {
+            width: 100px;
+            height: 100px;
+            border: 10px solid #f3f3f3;
+            border-top: 10px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .loading-text {
+            color: white;
+            font-size: 18px;
+            margin-top: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .show-overlay {
+            visibility: visible;
+            opacity: 1;
+        }
+        .nav-tabs .nav-link {
+            color: #2c3e50;
+            border-radius: 8px 8px 0 0;
+            padding: 10px 20px;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: #2c3e50;
+            color: white;
+            border-color: #2c3e50;
+        }
+        .tab-content {
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            padding: 20px;
+        }
+        .preset-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .preset-card {
+            width: 150px;
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .preset-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .preset-card i {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #3498db;
+        }
+        
+        /* Path display styling */
+        .path-container {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .path-display {
+            font-size: 14px;
+            overflow-x: auto;
+            white-space: nowrap;
+            margin-bottom: 10px;
+        }
+        
+        /* Make the control buttons more visible */
+        .control-buttons {
+            display: flex;
+            gap: 15px;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 2px solid #3498db;
+        }
+        
+        .control-buttons .form-check-label {
+            font-weight: bold;
+            color: #ffffff !important;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+        
+        .control-buttons .form-check-input {
+            width: 40px;
+            height: 20px;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Traveling Salesman Problem Solver</h1>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Cities</h4>
+                    </div>
+                    <div class="card-body">
+                        <ul class="nav nav-tabs" id="citiesTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="manual-tab" data-bs-toggle="tab" data-bs-target="#manual" type="button" role="tab" aria-controls="manual" aria-selected="true">Manual</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="presets-tab" data-bs-toggle="tab" data-bs-target="#presets" type="button" role="tab" aria-controls="presets" aria-selected="false">Presets</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="generate-tab" data-bs-toggle="tab" data-bs-target="#generate" type="button" role="tab" aria-controls="generate" aria-selected="false">Generate</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="citiesTabsContent">
+                            <div class="tab-pane fade show active" id="manual" role="tabpanel" aria-labelledby="manual-tab">
+                                <div class="city-input">
+                                    <input type="text" id="cityName" class="form-control" placeholder="City Name">
+                                    <input type="number" id="cityX" class="form-control" placeholder="X">
+                                    <input type="number" id="cityY" class="form-control" placeholder="Y">
+                                    <button class="btn btn-primary" onclick="addCity()"><i class="fas fa-plus"></i></button>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="presets" role="tabpanel" aria-labelledby="presets-tab">
+                                <div class="preset-container">
+                                    <div class="preset-card" onclick="loadPresetCities('usa')">
+                                        <i class="fas fa-flag-usa"></i>
+                                        <div>USA Cities</div>
+                                    </div>
+                                    <div class="preset-card" onclick="loadPresetCities('europe')">
+                                        <i class="fas fa-globe-europe"></i>
+                                        <div>Europe</div>
+                                    </div>
+                                    <div class="preset-card" onclick="loadPresetCities('grid')">
+                                        <i class="fas fa-th"></i>
+                                        <div>Grid</div>
+                                    </div>
+                                    <div class="preset-card" onclick="loadPresetCities('capitals')">
+                                        <i class="fas fa-globe-americas"></i>
+                                        <div>World Capitals</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="generate" role="tabpanel" aria-labelledby="generate-tab">
+                                <div class="mb-3">
+                                    <label class="form-label">Number of Cities</label>
+                                    <input type="number" id="randomCitiesCount" class="form-control" value="20" min="5" max="100">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Distribution</label>
+                                    <select id="randomDistribution" class="form-select">
+                                        <option value="uniform">Uniform</option>
+                                        <option value="cluster">Clustered</option>
+                                        <option value="circle">Circular</option>
+                                    </select>
+                                </div>
+                                <button class="btn btn-primary w-100" onclick="generateRandomCities()">
+                                    <i class="fas fa-random me-2"></i>Generate
+                                </button>
+                            </div>
+                        </div>
 
-        <!-- Input Section for City Name and Coordinates -->
-        <div class="input-container">
-            <label for="cityName">City Name:</label>
-            <input type="text" id="cityName" placeholder="Enter city name" />
-            <label for="cityX">X Coordinate:</label>
-            <input type="number" id="cityX" placeholder="Enter X Coordinate" />
-            <label for="cityY">Y Coordinate:</label>
-            <input type="number" id="cityY" placeholder="Enter Y Coordinate" />
-            <button onclick="addCity()">Add City</button>
-        </div>
+                        <div class="d-flex mt-3 mb-3">
+                            <button class="btn btn-danger w-100" onclick="clearCities()">
+                                <i class="fas fa-trash me-1"></i> Clear All Cities
+                            </button>
+                        </div>
 
-        <!-- List of Added Cities -->
-        <div class="city-list">
-            <h3>Added Cities</h3>
-            <ul id="citiesList">
-                <!-- Cities will be listed here -->
-            </ul>
-        </div>
+                        <div class="city-list" id="cityList"></div>
 
-        <!-- Canvas for Drawing Cities and Path -->
-        <canvas id="tspCanvas" width="600" height="600"></canvas>
+                        <div class="algorithm-settings">
+                            <h5><i class="fas fa-cogs me-2"></i>Algorithm Parameters</h5>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Population Size</label>
+                                <input type="number" id="populationSize" class="form-control" value="100" min="10" max="1000">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Generations</label>
+                                <input type="number" id="generations" class="form-control" value="100" min="10" max="1000">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Mutation Rate</label>
+                                <input type="range" id="mutationRate" class="form-range" min="0" max="0.2" value="0.01" step="0.01" oninput="document.getElementById('mutationRateValue').textContent = this.value">
+                                <div class="d-flex justify-content-between">
+                                    <small>0</small>
+                                    <small id="mutationRateValue">0.01</small>
+                                    <small>0.2</small>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Crossover Rate</label>
+                                <input type="range" id="crossoverRate" class="form-range" min="0.5" max="1.0" value="0.9" step="0.05" oninput="document.getElementById('crossoverRateValue').textContent = this.value">
+                                <div class="d-flex justify-content-between">
+                                    <small>0.5</small>
+                                    <small id="crossoverRateValue">0.9</small>
+                                    <small>1.0</small>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Elitism Count</label>
+                                <input type="number" id="elitismCount" class="form-control" value="2" min="0" max="20">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Tournament Size</label>
+                                <input type="number" id="tournamentSize" class="form-control" value="5" min="2" max="10">
+                            </div>
 
-        <!-- Solve Button -->
-        <button id="solveBtn" onclick="solveTSP()">Solve TSP</button>
-
-        <!-- Result Section (Hidden initially) -->
-        <div id="result" class="hidden">
-            <h2>Optimal Path and Distance</h2>
-            <p id="optimalPath"></p>
-            <p id="totalDistance"></p>
+                            <h6 class="mt-3">Presets</h6>
+                            <div>
+                                <button class="btn btn-sm btn-outline-secondary preset-btn" onclick="loadParameterPreset('balanced')">Balanced</button>
+                                <button class="btn btn-sm btn-outline-secondary preset-btn" onclick="loadParameterPreset('explorative')">Explorative</button>
+                                <button class="btn btn-sm btn-outline-secondary preset-btn" onclick="loadParameterPreset('exploitative')">Exploitative</button>
+                            </div>
+                            
+                            <button class="btn btn-success w-100 mt-4" onclick="startAlgorithm()">
+                                <i class="fas fa-play me-2"></i>Start Algorithm
+                            </button>
+                            
+                            <div class="progress mt-3">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     id="progressBar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-9">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0"><i class="fas fa-project-diagram me-2"></i>TSP Visualization</h4>
+                        <div class="control-buttons">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="historyToggle" onchange="toggleHistoricalPaths()">
+                                <label class="form-check-label text-white" for="historyToggle">Show History</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="heatmapToggle" onchange="toggleHeatmap()">
+                                <label class="form-check-label text-white" for="heatmapToggle">Heatmap</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="canvas-container">
+                            <canvas id="tspCanvas"></canvas>
+                        </div>
+                        
+                        <div class="stats">
+                            <div class="stat-card">
+                                <div class="stat-value" id="currentDistance">-</div>
+                                <div class="stat-label">Current Distance</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="bestDistance">-</div>
+                                <div class="stat-label">Best Distance</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="currentGeneration">-</div>
+                                <div class="stat-label">Generation</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="bestFitness">-</div>
+                                <div class="stat-label">Best Fitness</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="averageFitness">-</div>
+                                <div class="stat-label">Avg Fitness</div>
+                            </div>
+                        </div>
+                        
+                        <div class="path-container mt-3">
+                            <div class="path-display">
+                                <strong>Best Path:</strong> <span id="bestPath">-</span>
+                            </div>
+                            <button class="btn btn-success mt-2" onclick="downloadResults()">
+                                <i class="fas fa-download"></i> Download Results
+                            </button>
+                        </div>
+                        
+                        <div class="animation-controls">
+                            <button class="btn btn-primary" onclick="pauseAnimation()">
+                                <i class="fas fa-pause"></i> Pause
+                            </button>
+                            <button class="btn btn-primary" onclick="resumeAnimation()">
+                                <i class="fas fa-play"></i> Resume
+                            </button>
+                            <button class="btn btn-primary" onclick="resetAnimation()">
+                                <i class="fas fa-sync-alt"></i> Reset
+                            </button>
+                            <div class="btn-group">
+                                <button class="btn btn-primary" onclick="setAnimationSpeed('slow')">
+                                    <i class="fas fa-walking"></i> Slow
+                                </button>
+                                <button class="btn btn-primary" onclick="setAnimationSpeed('medium')">
+                                    <i class="fas fa-running"></i> Medium
+                                </button>
+                                <button class="btn btn-primary" onclick="setAnimationSpeed('fast')">
+                                    <i class="fas fa-bolt"></i> Fast
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-container mt-3">
+                            <canvas id="fitnessChart"></canvas>
+                        </div>
+                        
+                        <!-- Add visualization features explanation -->
+                        <div class="features-info mt-3 p-3 bg-light border rounded">
+                            <h5><i class="fas fa-info-circle"></i> Visualization Features</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="feature-item">
+                                        <strong>Historical Paths:</strong> Shows previous best routes from earlier generations as faint lines, 
+                                        allowing you to see how the solution evolved over time.
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="feature-item">
+                                        <strong>Heatmap:</strong> Highlights frequently used edges between cities with color intensity. 
+                                        Red edges appear more often in good solutions, revealing patterns.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-center mt-2">
+                                <span class="badge bg-primary">Use the blue-bordered toggles at the top right to activate these features</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script src="scripts.js"></script>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="text-center">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Processing with Genetic Algorithm...</div>
+            <div class="text-white mt-3" id="loadingProgress">0%</div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global variables
+        let cities = [];
+        let visualization;
+        let fitnessChart;
+        let simulation;
+        let animationSpeed = 50; // milliseconds
+        
+        // Initialize the application
+        window.onload = function() {
+            // Initialize visualization
+            visualization = new TSPVisualization('tspCanvas');
+            visualization.setProgressCallback(updateProgress);
+            
+            // Initialize chart
+            fitnessChart = createFitnessChart('fitnessChart');
+            
+            // Initialize simulation
+            simulation = new TSPSimulation();
+            
+            // Resize canvas to fit container
+            visualization.resizeCanvas();
+        };
+        
+        // Add a new city
+        function addCity() {
+            const name = document.getElementById('cityName').value;
+            const x = parseInt(document.getElementById('cityX').value);
+            const y = parseInt(document.getElementById('cityY').value);
+            
+            if (name && !isNaN(x) && !isNaN(y)) {
+                cities.push({ name, x, y });
+                updateCityList();
+                visualization.setCities(cities);
+                clearInputs();
+            }
+        }
+        
+        // Generate random cities based on form inputs
+        function generateRandomCities() {
+            const count = parseInt(document.getElementById('randomCitiesCount').value);
+            const distribution = document.getElementById('randomDistribution').value;
+            
+            if (count >= 5 && count <= 100) {
+                const newCities = simulation.generateRandomProblem(count, distribution);
+                cities = newCities;
+                updateCityList();
+                visualization.setCities(cities);
+            } else {
+                alert('Please enter a number between 5 and 100');
+            }
+        }
+        
+        // Load preset cities
+        function loadPresetCities(presetName) {
+            const presetCities = window.tspPresets.getPreset(presetName);
+            if (presetCities) {
+                cities = presetCities;
+                updateCityList();
+                visualization.setCities(cities);
+            } else {
+                alert('Preset not found or not loaded yet. Please try again in a moment.');
+            }
+        }
+        
+        // Clear all cities
+        function clearCities() {
+            cities = [];
+            updateCityList();
+            visualization.setCities(cities);
+            visualization.reset();
+        }
+        
+        // Remove a city
+        function removeCity(index) {
+            cities.splice(index, 1);
+            updateCityList();
+            visualization.setCities(cities);
+        }
+        
+        // Update the city list display
+        function updateCityList() {
+            const list = document.getElementById('cityList');
+            list.innerHTML = cities.map((city, index) => `
+                <div class="city-item">
+                    <span>${city.name} (${city.x}, ${city.y})</span>
+                    <button onclick="removeCity(${index})"><i class="fas fa-times"></i></button>
+                </div>
+            `).join('');
+        }
+        
+        // Clear input fields
+        function clearInputs() {
+            document.getElementById('cityName').value = '';
+            document.getElementById('cityX').value = '';
+            document.getElementById('cityY').value = '';
+        }
+        
+        // Load parameter presets
+        function loadParameterPreset(type) {
+            switch (type) {
+                case 'balanced':
+                    document.getElementById('populationSize').value = 100;
+                    document.getElementById('generations').value = 100;
+                    document.getElementById('mutationRate').value = 0.01;
+                    document.getElementById('mutationRateValue').textContent = 0.01;
+                    document.getElementById('crossoverRate').value = 0.9;
+                    document.getElementById('crossoverRateValue').textContent = 0.9;
+                    document.getElementById('elitismCount').value = 2;
+                    document.getElementById('tournamentSize').value = 5;
+                    break;
+                case 'explorative':
+                    document.getElementById('populationSize').value = 200;
+                    document.getElementById('generations').value = 150;
+                    document.getElementById('mutationRate').value = 0.05;
+                    document.getElementById('mutationRateValue').textContent = 0.05;
+                    document.getElementById('crossoverRate').value = 0.8;
+                    document.getElementById('crossoverRateValue').textContent = 0.8;
+                    document.getElementById('elitismCount').value = 1;
+                    document.getElementById('tournamentSize').value = 3;
+                    break;
+                case 'exploitative':
+                    document.getElementById('populationSize').value = 100;
+                    document.getElementById('generations').value = 200;
+                    document.getElementById('mutationRate').value = 0.01;
+                    document.getElementById('mutationRateValue').textContent = 0.01;
+                    document.getElementById('crossoverRate').value = 0.95;
+                    document.getElementById('crossoverRateValue').textContent = 0.95;
+                    document.getElementById('elitismCount').value = 5;
+                    document.getElementById('tournamentSize').value = 7;
+                    break;
+            }
+        }
+        
+        // Start the genetic algorithm
+        async function startAlgorithm() {
+            if (cities.length < 4) {
+                alert('Please add at least 4 cities');
+                return;
+            }
+            
+            // Show loading overlay
+            document.getElementById('loadingOverlay').classList.add('show-overlay');
+            
+            // Get parameters
+            const params = {
+                cities: cities,
+                populationSize: parseInt(document.getElementById('populationSize').value),
+                generations: parseInt(document.getElementById('generations').value),
+                mutationRate: parseFloat(document.getElementById('mutationRate').value),
+                crossoverRate: parseFloat(document.getElementById('crossoverRate').value),
+                elitismCount: parseInt(document.getElementById('elitismCount').value),
+                tournamentSize: parseInt(document.getElementById('tournamentSize').value)
+            };
+            
+            // Set parameters for visualization
+            visualization.setParameters(params.populationSize, params.generations);
+            
+            try {
+                const response = await fetch('/solve-tsp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(params)
+                });
+                
+                const result = await response.json();
+                lastResult = result; // Store for download
+                
+                // Hide loading overlay
+                document.getElementById('loadingOverlay').classList.remove('show-overlay');
+                
+                // Update UI
+                updateStats(result);
+                
+                // Display best path
+                const pathDisplay = document.getElementById('bestPath');
+                if (result.bestPath && result.bestPath.length > 0) {
+                    // Format the path for display (city indices + 1 for human readability)
+                    pathDisplay.textContent = result.bestPath.map(idx => idx + 1).join(' → ');
+                } else if (result.path) {
+                    pathDisplay.textContent = result.path.join(' → ');
+                } else {
+                    pathDisplay.textContent = 'No path found';
+                }
+                
+                // Update visualization
+                const bestPath = result.bestPath || [];
+                
+                // Check if we're using the old or new format
+                if (bestPath.length > 0 && typeof bestPath[0] === 'number') {
+                    // New format - bestPath is already indices
+                    visualization.setPaths(bestPath, bestPath, result.bestDistance, result.bestDistance, result.generationHistory ? result.generationHistory.length : 0);
+                    
+                    // Update chart with generation history if available
+                    if (result.generationHistory && result.generationHistory.length > 0) {
+                        const bestFitnessHistory = result.generationHistory.map(g => g.bestFitness);
+                        const avgFitnessHistory = result.generationHistory.map(g => g.averageFitness);
+                        const generations = result.generationHistory.map(g => g.generation);
+                        
+                        // Update the chart with all generation data
+                        updateFitnessChart(fitnessChart, generations, bestFitnessHistory, avgFitnessHistory);
+                    }
+                } else {
+                    // Old format
+                    const path = result.path.map(name => cities.findIndex(c => c.name === name));
+                    visualization.setPaths(path, path, result.distance, result.bestFitness, result.generation);
+                    
+                    // Update chart
+                    updateFitnessChart(fitnessChart, result.generation, result.bestFitness, result.averageFitness);
+                }
+                
+                // Start animation
+                visualization.startAnimation();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loadingOverlay').classList.remove('show-overlay');
+                alert('An error occurred while running the algorithm');
+            }
+        }
+        
+        // Update progress bar
+        function updateProgress(percent) {
+            document.getElementById('progressBar').style.width = `${percent}%`;
+            document.getElementById('loadingProgress').textContent = `${Math.round(percent)}%`;
+        }
+        
+        // Update statistics display
+        function updateStats(result) {
+            // Check which format we're using
+            if (result.bestDistance !== undefined) {
+                // New format
+                document.getElementById('currentDistance').textContent = result.bestDistance.toFixed(2);
+                document.getElementById('bestDistance').textContent = result.bestDistance.toFixed(2);
+                
+                const generations = result.generationHistory ? result.generationHistory.length : 0;
+                document.getElementById('currentGeneration').textContent = generations;
+                
+                if (result.generationHistory && result.generationHistory.length > 0) {
+                    const lastGen = result.generationHistory[result.generationHistory.length - 1];
+                    document.getElementById('bestFitness').textContent = lastGen.bestFitness.toFixed(2);
+                    document.getElementById('averageFitness').textContent = lastGen.averageFitness.toFixed(2);
+                } else {
+                    document.getElementById('bestFitness').textContent = result.bestDistance.toFixed(2);
+                    document.getElementById('averageFitness').textContent = (result.bestDistance * 1.2).toFixed(2);
+                }
+            } else {
+                // Old format
+                document.getElementById('currentDistance').textContent = result.distance;
+                document.getElementById('bestDistance').textContent = result.distance;
+                document.getElementById('currentGeneration').textContent = result.generation;
+                document.getElementById('bestFitness').textContent = result.bestFitness.toFixed(4);
+                document.getElementById('averageFitness').textContent = result.averageFitness.toFixed(4);
+            }
+        }
+        
+        // Animation controls
+        function pauseAnimation() {
+            visualization.pauseAnimation();
+        }
+        
+        function resumeAnimation() {
+            visualization.resumeAnimation();
+        }
+        
+        function resetAnimation() {
+            visualization.reset();
+        }
+        
+        // Set animation speed
+        function setAnimationSpeed(speed) {
+            switch (speed) {
+                case 'slow':
+                    visualization.setAnimationSpeed(100);
+                    break;
+                case 'medium':
+                    visualization.setAnimationSpeed(50);
+                    break;
+                case 'fast':
+                    visualization.setAnimationSpeed(10);
+                    break;
+            }
+        }
+        
+        // Toggle historical paths
+        function toggleHistoricalPaths() {
+            const isChecked = document.getElementById('historyToggle').checked;
+            console.log('Historical paths toggled:', isChecked);
+            visualization.toggleHistoricalPaths();
+        }
+        
+        // Toggle heatmap
+        function toggleHeatmap() {
+            const isChecked = document.getElementById('heatmapToggle').checked;
+            console.log('Heatmap toggled:', isChecked);
+            visualization.toggleHeatmap();
+        }
+        
+        // Update fitness chart
+        function updateFitnessChart(chart, generations, bestFitness, avgFitness) {
+            // Handle both single values and arrays
+            const genData = Array.isArray(generations) ? generations : [generations];
+            const bestData = Array.isArray(bestFitness) ? bestFitness : [bestFitness];
+            const avgData = Array.isArray(avgFitness) ? avgFitness : [avgFitness];
+            
+            // Clear existing data
+            chart.data.labels = [];
+            chart.data.datasets[0].data = [];
+            chart.data.datasets[1].data = [];
+            
+            // Add new data
+            chart.data.labels = genData;
+            chart.data.datasets[0].data = bestData;
+            chart.data.datasets[1].data = avgData;
+            
+            chart.update();
+        }
+
+        // Add this function to download results
+        let lastResult = null;
+        
+        function downloadResults() {
+            if (!lastResult) {
+                alert('No results available. Please run the algorithm first.');
+                return;
+            }
+            
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(lastResult, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "tsp_results.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+    </script>
 </body>
 </html>
